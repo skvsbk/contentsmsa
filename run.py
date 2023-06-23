@@ -4,7 +4,6 @@ from config import Config
 import crud
 
 
-
 class ContentMSA:
     def __init__(self, topic_consumer: str, topic_producer: str, broker: dict, group_id: str):
         self.topic_consumer = topic_consumer
@@ -26,18 +25,26 @@ class ContentMSA:
                 self.consumer.commit()
                 continue
 
-            if message_value["name"] == "get_posts_list": # 2
-                self.consumer.commit()
-                # Query from DB
-                result = [item.to_dict() for item in crud.get_all_posts()]
-                # Send result to kafka
-                self.producer.send(topic=self.topic_producer, value=result,
-                                   key=message.key)
+            # 2
+            if message_value["name"] == "get_posts_list":
+                match message_value['method']:
+                    case 'get':
+                        self.consumer.commit()
+                        # Query from DB
+                        result = crud.get_all_posts()
+                        # Send result to kafka
+                        self.producer.send(topic=self.topic_producer, value=result,
+                                           key=message.key)
+                    case 'post':
+                        self.consumer.commit()
+                        result = crud.create_post(message_value)
+                        self.producer.send(topic=self.topic_producer, value=result,
+                                           key=message.key)
 
             if message_value["name"] == "get_authors_id_posts_list":  # 3
                 self.consumer.commit()
                 # Query from DB
-                result = [i.to_dict() for i in crud.get_posts_by_author(message_value["user_id"])]
+                result = crud.get_posts_by_author(message_value["user_id"])
                 # Send result to kafka
                 self.producer.send(topic=self.topic_producer, value=result,
                                    key=message.key)
@@ -45,19 +52,27 @@ class ContentMSA:
             if message_value["name"] == "get_posts_id":  # 4
                 match message_value['method']:
                     case 'get':
+                        self.consumer.commit()
                         # Query from DB
-                        result = crud.get_post_by_id(post_id=message_value["post_id"]).to_dict()
+                        result = crud.get_post_by_id(post_id=message_value["post_id"])
                         # Send result to kafka
                         self.producer.send(topic=self.topic_producer, value=result,
                                            key=message.key)
-                    case 'post':
-                        result = crud.create_post(value=message_value)
                     case 'put':
-                        # value = {'name': 'post_posts_id', 'user_id': user_id,
-                        #         'method': 'post', 'title': request.data['title'], 'body': request.data['body']},
+                        # message_value = {'body': 'tes_4 body', 'id': 9, 'method': 'put', 'name': 'get_posts_id',
+                        # 'title': 'test_4 for create post', 'user_id': 1}
+
+                        self.consumer.commit()
                         result = crud.update_post(value=message_value)
+                        self.producer.send(topic=self.topic_producer, value=result,
+                                           key=message.key)
                     case'delete':
+                        self.consumer.commit()
+                        # Query from DB
                         result = crud.delete_post(post_id=message_value["post_id"])
+                        # Send result to kafka
+                        self.producer.send(topic=self.topic_producer, value=result,
+                                           key=message.key)
 
             if message_value["name"] == "get_posts_with_authors_list":  # 5
                 # value = {'name': 'get_posts_with_authors_list'},

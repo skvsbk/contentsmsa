@@ -6,14 +6,14 @@ load_dotenv(find_dotenv('contentnsa.env'))
 
 
 class Config:
-    #### Kafka ####
+    # === Kafka ===
     BROKER_ADDRESS = os.getenv('BROKER_ADDRESS')
     BROKER_PORT = os.getenv('BROKER_PORT')
     KAFKA_TOPIC_PRODUCER = os.getenv('KAFKA_TOPIC_PRODUCER')
     KAFKA_TOPIC_CONSUMER = os.getenv('KAFKA_TOPIC_CONSUMER')
     KAFKA_GROUP_ID = os.getenv('KAFKA_GROUP_ID')
 
-    #### Database ####
+    # === Database ===
     DB_HOST = os.getenv('DB_HOST')
     DB_PORT = os.getenv('DB_PORT')
     DB_USER = os.getenv('DB_USER')

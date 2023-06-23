@@ -32,11 +32,3 @@ try:
     Base.metadata.create_all(engine)
 except Exception as e:
     print(e)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()

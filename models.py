@@ -16,15 +16,3 @@ class ContentBD(Base, SerializerMixin):
     userid = Column(Integer)
     title = Column(String(100), nullable=False)
     body = Column(String(255), nullable=False)
-
-
-    # def as_dict(self):
-    #     return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-
-    # def __repr__(self):
-    #     # return f'Post(userId={self.userid}, id={self.id}, title={self.title}, body={self.body})'
-    #     return str({c.name: getattr(self, c.name) for c in self.__table__.columns})
-    #     # return f'"userId": {self.userid}, "id": {self.id}, "title": "{self.title}", "body": "{self.body}"'
-    #     # return dict(zip(fruits, prices))
-
-# Base.metadata.create_all(engine)
