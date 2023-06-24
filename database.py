@@ -19,7 +19,7 @@ databases = f"show databases like '{Config.DB_NAME}'"
 cursor.execute(databases)
 
 try:
-    cursor.next()
+    cursor.fetchone()
 except StopIteration:
     cursor.execute(f"create database {Config.DB_NAME}")
 
@@ -32,11 +32,3 @@ try:
     Base.metadata.create_all(engine)
 except Exception as e:
     print(e)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
