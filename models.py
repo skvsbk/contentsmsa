@@ -1,7 +1,6 @@
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy_serializer import SerializerMixin
-# from database import engine
 
 
 Base = declarative_base()
@@ -9,8 +8,6 @@ Base = declarative_base()
 
 class ContentBD(Base, SerializerMixin):
     __tablename__ = 'content'
-
-    # serialize_only = ('id', 'userid', 'title', 'body')
 
     id = Column(Integer, primary_key=True)
     userid = Column(Integer)

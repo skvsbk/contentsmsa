@@ -19,7 +19,7 @@ databases = f"show databases like '{Config.DB_NAME}'"
 cursor.execute(databases)
 
 try:
-    cursor.next()
+    cursor.fetchone()
 except StopIteration:
     cursor.execute(f"create database {Config.DB_NAME}")
 

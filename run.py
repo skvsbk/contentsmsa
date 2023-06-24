@@ -16,67 +16,77 @@ class ContentMSA:
                                       value_serializer=lambda m: json.dumps(m).encode())
 
     def run(self):
+        """
+        Retrieving data from kafka, invoking the necessary CRUD, and pushing the data back to kafka
+        """
         for message in self.consumer:
-            message_value = json.loads(message.value.decode('utf-8'))  # dict {"name": "get_posts_with_author_list"}
+            # Get data from kafka
+            message_value = json.loads(message.value.decode('utf-8'))
             try:
-                message.key.decode('utf-8')  # key=b'unique string for determine message 9929'
+                message.key.decode('utf-8')
             except:
                 # Commit if message.key is None or can't be decode
                 self.consumer.commit()
                 continue
 
+            # Depending on the received name, we call the corresponding crud
             # 2
             if message_value["name"] == "get_posts_list":
                 match message_value['method']:
                     case 'get':
+                        # Consumer commit
                         self.consumer.commit()
-                        # Query from DB
+                        # Database query
                         result = crud.get_all_posts()
-                        # Send result to kafka
-                        self.producer.send(topic=self.topic_producer, value=result,
-                                           key=message.key)
+                        # Send result in Kafka
+                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
                     case 'post':
+                        # Consumer commit
                         self.consumer.commit()
+                        # Database query
                         result = crud.create_post(message_value)
-                        self.producer.send(topic=self.topic_producer, value=result,
-                                           key=message.key)
-
-            if message_value["name"] == "get_authors_id_posts_list":  # 3
+                        # Send result in Kafka
+                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
+            # 3
+            if message_value["name"] == "get_authors_id_posts_list":  
+                # Consumer commit
                 self.consumer.commit()
-                # Query from DB
+                # Database query
                 result = crud.get_posts_by_author(message_value["user_id"])
-                # Send result to kafka
-                self.producer.send(topic=self.topic_producer, value=result,
-                                   key=message.key)
-
-            if message_value["name"] == "get_posts_id":  # 4
+                # Send result in Kafka
+                self.producer.send(topic=self.topic_producer, value=result, key=message.key)
+            # 4
+            if message_value["name"] == "get_posts_id":  
                 match message_value['method']:
                     case 'get':
+                        # Consumer commit
                         self.consumer.commit()
-                        # Query from DB
+                        # Database query
                         result = crud.get_post_by_id(post_id=message_value["post_id"])
-                        # Send result to kafka
-                        self.producer.send(topic=self.topic_producer, value=result,
-                                           key=message.key)
+                        # Send result in Kafka
+                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
                     case 'put':
-                        # message_value = {'body': 'tes_4 body', 'id': 9, 'method': 'put', 'name': 'get_posts_id',
-                        # 'title': 'test_4 for create post', 'user_id': 1}
-
+                        # Consumer commit
                         self.consumer.commit()
+                        # Database query
                         result = crud.update_post(value=message_value)
-                        self.producer.send(topic=self.topic_producer, value=result,
-                                           key=message.key)
+                        # Send result in Kafka
+                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
                     case'delete':
+                        # Consumer commit
                         self.consumer.commit()
-                        # Query from DB
+                        # Database query
                         result = crud.delete_post(post_id=message_value["post_id"])
-                        # Send result to kafka
-                        self.producer.send(topic=self.topic_producer, value=result,
-                                           key=message.key)
-
-            if message_value["name"] == "get_posts_with_authors_list":  # 5
-                # value = {'name': 'get_posts_with_authors_list'},
-                result = crud.get_all_posts()
+                        # Send result in Kafka
+                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
+            # 5
+            if message_value["name"] == "get_posts_with_authors_list":
+                # Consumer commit
+                self.consumer.commit()
+                # Database query
+                result = crud.get_all_posts_ordered_by_userid()
+                # Send result in Kafka
+                self.producer.send(topic=self.topic_producer, value=result, key=message.key)
 
 
 if __name__ == '__main__':

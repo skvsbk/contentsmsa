@@ -1,28 +1,29 @@
 from models import ContentBD
 from database import SessionLocal
+from serializers import serializer_posts, serializer_posts_without_userid
 
 
 # 2
 def get_all_posts():
     """
-    Get all posts from DB
+    Get all posts ordered by id from DB
     :return: list of dicts
     """
     with SessionLocal() as session:
-        query = session.query(ContentBD).all()
-    return [item.to_dict() for item in query]
+        query = session.query(ContentBD).order_by(ContentBD.id)
+    return [serializer_posts(item.to_dict()) for item in query]
 
 
 # 3
 def get_posts_by_author(user_id):
     """
-    Get posts by userid from DB
+    Get posts by user_id from DB
     :param user_id: int
     :return: list of dicts
     """
     with SessionLocal() as session:
         query = session.query(ContentBD).filter(ContentBD.userid == user_id).all()
-    return [item.to_dict() for item in query]
+    return [serializer_posts_without_userid(item.to_dict()) for item in query]
 
 
 # 4
@@ -40,11 +41,22 @@ def get_post_by_id(post_id):
             return query[0].to_dict()
 
 
+# 5
+def get_all_posts_ordered_by_userid():
+    """
+    Get all posts ordered by id from DB
+    :return: list of dicts
+    """
+    with SessionLocal() as session:
+        query = session.query(ContentBD).order_by(ContentBD.userid)
+    return [serializer_posts(item.to_dict()) for item in query]
+
+
 def create_post(value):
     """
-
-    :param value: dict {'user_id': 1, 'titte': 'some titte', 'body': 'some body'}
-    :return: dict like value, but additional with id
+    Create post with param
+    :param value: dict {'user_id': 1, 'titte': 'post titte', 'body': 'post body'}
+    :return: dict of received input values, but padded with the id key
     """
     try:
         with SessionLocal() as session:
@@ -59,11 +71,11 @@ def create_post(value):
         return {'details': 'Post was not created'}
 
 
-def update_post(value, ):
+def update_post(value):
     """
-    Update post by
-    :param value: dict {'user_id': 1, 'titte': 'some titte', 'body': 'some body'}
-    :return: dict like value, but additional with id
+    Update post with userid and post id
+    :param value: dict {'user_id': 1, 'titte': 'post titte', 'body': 'post body'}
+    :return: dict of received input values, but padded with the id key
     """
     try:
         with SessionLocal() as session:
