@@ -1,24 +1,15 @@
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String
-# from database import engine
+from sqlalchemy_serializer import SerializerMixin
 
 
 Base = declarative_base()
 
 
-class ContentBD(Base):
+class ContentBD(Base, SerializerMixin):
     __tablename__ = 'content'
 
     id = Column(Integer, primary_key=True)
     userid = Column(Integer)
     title = Column(String(100), nullable=False)
     body = Column(String(255), nullable=False)
-
-
-    def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
-
-    def __repr__(self):
-        return f'Post(userId={self.userid}, id={self.id}, title={self.title}, body={self.body})'
-
-# Base.metadata.create_all(engine)

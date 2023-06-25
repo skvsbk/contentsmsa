@@ -3,18 +3,21 @@ FROM python:3.10
 
 # Set environment variables
 ENV PIP_DISABLE_PIP_VERSION_CHECK 1
+# or update pip if needed
+#RUN pip3 install --upgrade pip
+
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-#directory to store app source code
-#RUN mkdir /code
-
 # Set work directory
-WORKDIR /code
+WORKDIR /app
 
 # Install dependencies
 COPY ./requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --default-timeout=100 --no-cache-dir
 
-# Copy project
-COPY . ./code
+# Copy project to WORKDIR
+COPY . .
+
+# Run project
+CMD ["python", "run.py"]
