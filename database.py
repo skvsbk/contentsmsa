@@ -2,8 +2,6 @@ from sqlalchemy import create_engine
 import mysql.connector
 from sqlalchemy.orm import sessionmaker
 from models import Base
-
-
 from config import Config
 
 
@@ -19,7 +17,8 @@ databases = f"show databases like '{Config.DB_NAME}'"
 cursor.execute(databases)
 
 try:
-    cursor.fetchone()
+    if cursor.fetchone() is None:
+        cursor.execute(f"create database {Config.DB_NAME}")
 except StopIteration:
     cursor.execute(f"create database {Config.DB_NAME}")
 

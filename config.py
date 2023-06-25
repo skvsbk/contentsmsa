@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv, find_dotenv
 
 
-load_dotenv(find_dotenv('contentnsa.env'))
+load_dotenv(find_dotenv('contentmsa.env'))
 
 
 class Config:
