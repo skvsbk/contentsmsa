@@ -1,7 +1,8 @@
 import json
-from kafka import KafkaConsumer, KafkaProducer
+from kafka import KafkaConsumer
 from config import Config
-import crud
+from service import handlers
+from service import result_submission_publisher
 
 
 class ContentMSA:
@@ -12,12 +13,10 @@ class ContentMSA:
                                       bootstrap_servers=broker,
                                       enable_auto_commit=False,
                                       group_id=group_id)
-        self.producer = KafkaProducer(bootstrap_servers=broker,
-                                      value_serializer=lambda m: json.dumps(m).encode())
 
     def run(self):
         """
-        Retrieving data from kafka, invoking the necessary CRUD, and pushing the data back to kafka
+        Retrieving data from kafka, invoking the necessary handlers, and pushing the json back to kafka
         """
         for message in self.consumer:
             # Get data from kafka
@@ -29,64 +28,44 @@ class ContentMSA:
                 self.consumer.commit()
                 continue
 
+            # Consumer commit
+            self.consumer.commit()
+
             # Depending on the received name, we call the corresponding crud
-            # 2
-            if message_value["name"] == "get_posts_list":
-                match message_value['method']:
-                    case 'get':
-                        # Consumer commit
-                        self.consumer.commit()
-                        # Database query
-                        result = crud.get_all_posts()
-                        # Send result in Kafka
-                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
-                    case 'post':
-                        # Consumer commit
-                        self.consumer.commit()
-                        # Database query
-                        result = crud.create_post(message_value)
-                        # Send result in Kafka
-                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
-            # 3
-            if message_value["name"] == "get_authors_id_posts_list":  
-                # Consumer commit
-                self.consumer.commit()
-                # Database query
-                result = crud.get_posts_by_author(message_value["user_id"])
-                # Send result in Kafka
-                self.producer.send(topic=self.topic_producer, value=result, key=message.key)
-            # 4
-            if message_value["name"] == "get_posts_id":  
-                match message_value['method']:
-                    case 'get':
-                        # Consumer commit
-                        self.consumer.commit()
-                        # Database query
-                        result = crud.get_post_by_id(post_id=message_value["post_id"])
-                        # Send result in Kafka
-                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
-                    case 'put':
-                        # Consumer commit
-                        self.consumer.commit()
-                        # Database query
-                        result = crud.update_post(value=message_value)
-                        # Send result in Kafka
-                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
-                    case'delete':
-                        # Consumer commit
-                        self.consumer.commit()
-                        # Database query
-                        result = crud.delete_post(post_id=message_value["post_id"])
-                        # Send result in Kafka
-                        self.producer.send(topic=self.topic_producer, value=result, key=message.key)
-            # 5
-            if message_value["name"] == "get_posts_with_authors_list":
-                # Consumer commit
-                self.consumer.commit()
-                # Database query
-                result = crud.get_all_posts_ordered_by_userid()
-                # Send result in Kafka
-                self.producer.send(topic=self.topic_producer, value=result, key=message.key)
+            result = self.define_handler(message_value)
+
+            # Send result in Kafka using publisher with subscribers
+            result_submission_publisher.change_state(key=message.key, value=result)
+
+    @staticmethod
+    def define_handler(message_value):
+        result = {'detail': 'No haldler for request'}
+        # 2
+        if message_value["name"] == "get_posts_list":
+            match message_value['method']:
+                case 'get':
+                    result = handlers.GetAllPosts().produce()
+                case 'post':
+                    result = handlers.CreatePost().produce(message_value)
+        # 3
+        if message_value["name"] == "get_authors_id_posts_list":
+            result = handlers.GetPostsByAuthor().produce(message_value)
+
+        # 4
+        if message_value["name"] == "get_posts_id":
+            match message_value['method']:
+                case 'get':
+                    result = handlers.GetPostById().produce(message_value)
+                case 'put':
+                    result = handlers.UpdatePost().produce(message_value)
+                case 'delete':
+                    result = handlers.DeletePost().produce(message_value)
+
+        # 5
+        if message_value["name"] == "get_posts_with_authors_list":
+            result = handlers.GetAllPostsOrderedByUserId().produce(message_value)
+
+        return result
 
 
 if __name__ == '__main__':
