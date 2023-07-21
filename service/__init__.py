@@ -1,7 +1,7 @@
-from . import observer
+from . import transmitters
 
 
-result_submission_publisher = observer.PostPublisher()
-kafka_producer_subscriber = observer.KafkaProducerSubscriber()
+result_submission_publisher = transmitters.PostPublisher()
+kafka_producer_subscriber = transmitters.KafkaProducerSubscriber()
 
 result_submission_publisher.attach(kafka_producer_subscriber)

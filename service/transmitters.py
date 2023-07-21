@@ -6,6 +6,7 @@ from config import Config
 
 
 class Publisher(ABC):
+    """Interface for concrete publishers"""
     @abstractmethod
     def attach(self, subscriber):
         pass
@@ -20,23 +21,29 @@ class Publisher(ABC):
 
 
 class Subscriber(ABC):
+    """Interface for concrete subscribers"""
     @abstractmethod
     def update(self, publisher):
         pass
 
 
 class KafkaProducerSubscriber(Subscriber):
+    """Subscriber for sending message by Kafka"""
 
     def update(self, publisher):
-        producer = KafkaProducer(bootstrap_servers=f'{Config.BROKER_ADDRESS}:{Config.BROKER_PORT}',
-                                 value_serializer=lambda m: json.dumps(m).encode('ascii'))
-
-        producer.send(topic=Config.KAFKA_TOPIC_PRODUCER,
-                      value=publisher.value,
-                      key=publisher.key)
+        try:
+            producer = KafkaProducer(bootstrap_servers=f'{Config.BROKER_ADDRESS}:{Config.BROKER_PORT}',
+                                     value_serializer=lambda m: json.dumps(m).encode('ascii'))
+            producer.send(topic=Config.KAFKA_TOPIC_PRODUCER,
+                          value=publisher.value,
+                          key=publisher.key)
+        except:
+            # Write some log record
+            pass
 
 
 class PostPublisher(Publisher):
+    """Publisher for notify concrete subscribers"""
     def __init__(self):
         self._observers = []
         self.key = None

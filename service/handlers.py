@@ -1,33 +1,87 @@
 from abc import ABC, abstractmethod
+
 from model.models import ContentBD
 from model.database import SessionLocal
 from service.serializers import UserPostsSerializer, PostsWOUseridSerializer, PostsSerializer, UserPostsListSerializer
+from service import result_submission_publisher
+
+
+class DefineHandler:
+    """Selecting a handler based on a request and then sending the results"""
+
+    def __init__(self, request, key):
+        self.request = request
+        self.key = key
+
+    def _check_request(self):
+        request_list = ['get_posts_list', 'get_authors_id_posts_list', 'get_posts_id', 'get_posts_with_authors_list']
+        return self.request["name"] in request_list
+
+    def execute_handler(self):
+        if not self._check_request():
+            result = {'detail': 'No handler for request'}
+            result_submission_publisher.change_state(key=self.key, value=result)
+            return
+
+        match self.request["name"]:
+            # 2
+            case 'get_posts_list':
+                match self.request['method']:
+                    case 'get':
+                        result = GetAllPosts().execute()
+                        result_submission_publisher.change_state(key=self.key, value=result)
+                    case 'post':
+                        result = CreatePost().execute(self.request)
+                        result_submission_publisher.change_state(key=self.key, value=result)
+            # 3
+            case 'get_authors_id_posts_list':
+                result = GetPostsByAuthor().execute(self.request)
+                result_submission_publisher.change_state(key=self.key, value=result)
+            # 4
+            case 'get_posts_id':
+                match self.request['method']:
+                    case 'get':
+                        result = GetPostById().execute(self.request)
+                        result_submission_publisher.change_state(key=self.key, value=result)
+                    case 'put':
+                        result = UpdatePost().execute(self.request)
+                        result_submission_publisher.change_state(key=self.key, value=result)
+                    case 'delete':
+                        result = DeletePost().execute(self.request)
+                        result_submission_publisher.change_state(key=self.key, value=result)
+            # 5
+            case 'get_posts_with_authors_list':
+                result = GetAllPostsOrderedByUserId().execute(self.request)
+                result_submission_publisher.change_state(key=self.key, value=result)
 
 
 class Handler(ABC):
+    """Interface for concrete handlers"""
     @abstractmethod
-    def produce(self, request):
+    def execute(self, request):
         pass
 
 
 class GetAllPosts(Handler):
-    def produce(self, request=None):
-        """
-        Get all posts ordered by id from DB
-        :return: list of dicts
-        """
+    """
+    Get all posts ordered by id from DB
+    :return: list of dicts
+    """
+
+    def execute(self, request=None):
         with SessionLocal() as session:
             query = session.query(ContentBD).order_by(ContentBD.id)
         return [PostsSerializer(item.to_dict()).data() for item in query]
 
 
 class CreatePost(Handler):
-    def produce(self, request):
-        """
-        Create post with param
-        :param request: dict {"user_id": 1, "title": "post title", "body': "post body"}
-        :return: dict of received input values, but padded with the id key
-        """
+    """
+    Create post with param
+    :param request: dict {"user_id": 1, "title": "post title", "body': "post body"}
+    :return: dict of received input values, but padded with the id key
+    """
+
+    def execute(self, request):
         try:
             with SessionLocal() as session:
                 query = ContentBD(userid=request['user_id'],
@@ -42,12 +96,13 @@ class CreatePost(Handler):
 
 
 class GetPostsByAuthor(Handler):
-    def produce(self, request):
-        """
-        Get posts by user_id from DB
-        :param request: dict
-        :return: list of dicts
-        """
+    """
+    Get posts by user_id from DB
+    :param request: dict
+    :return: list of dicts
+    """
+
+    def execute(self, request):
         with SessionLocal() as session:
             query = session.query(ContentBD).filter(ContentBD.userid == request["user_id"]).all()
 
@@ -58,12 +113,13 @@ class GetPostsByAuthor(Handler):
 
 
 class GetPostById(Handler):
-    def produce(self, request):
-        """
-        Get post by post_id from DB
-        :param request: dict
-        :return: dict
-        """
+    """
+    Get post by post_id from DB
+    :param request: dict
+    :return: dict
+    """
+
+    def execute(self, request):
         with SessionLocal() as session:
             query = session.query(ContentBD).filter(ContentBD.id == request["post_id"]).all()
             if len(query) == 0:
@@ -73,12 +129,13 @@ class GetPostById(Handler):
 
 
 class UpdatePost(Handler):
-    def produce(self, request):
-        """
-        Update post with userid and post id
-        :param request: dict {'user_id': 1, 'id': 10, 'titte': 'post titte', 'body': 'post body'}
-        :return: dict of received input values, but padded with the id key
-        """
+    """
+    Update post with userid and post id
+    :param request: dict {'user_id': 1, 'id': 10, 'titte': 'post titte', 'body': 'post body'}
+    :return: dict of received input values, but padded with the id key
+    """
+
+    def execute(self, request):
         try:
             with SessionLocal() as session:
                 query = session.query(ContentBD).filter(ContentBD.userid == request['user_id'],
@@ -93,12 +150,13 @@ class UpdatePost(Handler):
 
 
 class DeletePost(Handler):
-    def produce(self, request):
-        """
-        Delete post with post_id
-        :param request: dict
-        :return: dict
-        """
+    """
+    Delete post with post_id
+    :param request: dict
+    :return: dict
+    """
+
+    def execute(self, request):
         try:
             with SessionLocal() as session:
                 query = session.query(ContentBD).filter(ContentBD.id == request["post_id"]).one()
@@ -110,11 +168,12 @@ class DeletePost(Handler):
 
 
 class GetAllPostsOrderedByUserId(Handler):
-    def produce(self, request):
-        """
-        Get all posts ordered by id from DB
-        :return: list of dicts
-        """
+    """
+    Get all posts ordered by id from DB
+    :return: list of dicts
+    """
+
+    def execute(self, request):
         with SessionLocal() as session:
             query = session.query(ContentBD).order_by(ContentBD.userid)
 
