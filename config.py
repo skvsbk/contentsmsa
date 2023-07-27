@@ -20,3 +20,9 @@ class Config:
     DB_PASSWORD = os.getenv('DB_PASSWORD')
     DB_NAME = os.getenv('DB_NAME')
     DB_CONNECTOR = os.getenv('DB_CONNECTOR')
+
+    # Handlers
+    AVAILABLE_REQUESTS = ['get_posts_list',
+                          'get_authors_id_posts_list',
+                          'get_posts_id',
+                          'get_posts_with_authors_list']

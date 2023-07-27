@@ -4,6 +4,7 @@ from model.models import ContentBD
 from model.database import SessionLocal
 from service.serializers import UserPostsSerializer, PostsWOUseridSerializer, PostsSerializer, UserPostsListSerializer
 from service import result_submission_publisher
+from config import Config
 
 
 class DefineHandler:
@@ -13,12 +14,8 @@ class DefineHandler:
         self.request = request
         self.key = key
 
-    def _check_request(self):
-        request_list = ['get_posts_list', 'get_authors_id_posts_list', 'get_posts_id', 'get_posts_with_authors_list']
-        return self.request["name"] in request_list
-
     def execute_handler(self):
-        if not self._check_request():
+        if self.request["name"] not in Config.AVAILABLE_REQUESTS:
             result = {'detail': 'No handler for request'}
             result_submission_publisher.change_state(key=self.key, value=result)
             return
@@ -77,7 +74,7 @@ class GetAllPosts(Handler):
 class CreatePost(Handler):
     """
     Create post with param
-    :param request: dict {"user_id": 1, "title": "post title", "body': "post body"}
+    :param request: dict {"user_id": 1, "title": "post title", "body": "post body"}
     :return: dict of received input values, but padded with the id key
     """
 
