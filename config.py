@@ -20,3 +20,46 @@ class Config:
     DB_PASSWORD = os.getenv('DB_PASSWORD')
     DB_NAME = os.getenv('DB_NAME')
     DB_CONNECTOR = os.getenv('DB_CONNECTOR')
+
+    # Logging
+    LOG_FILENAME = './log/contentmsa.log'
+
+    LOGGING_CONFIG = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "default": {
+                "format": "%(asctime)s module:%(name)s %(levelname)s: %(message)s",
+                "datefmt": "%Y-%m-%d %H:%M:%S",
+            },
+        },
+        "handlers": {
+            "logfile": {
+                "formatter": "default",
+                "level": "INFO",
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": LOG_FILENAME,
+                "backupCount": 7,
+            },
+        },
+        # "loggers": {
+        #     "contentmsa": {
+        #         "level": "INFO",
+        #         "handlers": [
+        #             "logfile",
+        #         ],
+        #     },
+        # },
+        "root": {
+            "level": "WARNING",
+            "handlers": [
+                "logfile",
+            ]
+        }
+    }
+
+    # Handlers
+    AVAILABLE_REQUESTS = ['get_posts_list',
+                          'get_authors_id_posts_list',
+                          'get_posts_id',
+                          'get_posts_with_authors_list']

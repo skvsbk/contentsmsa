@@ -2,7 +2,13 @@ import json
 from kafka import KafkaConsumer
 from config import Config
 from service import handlers
+import logging.config
 # from service import result_submission_publisher
+
+
+logging.config.dictConfig(Config.LOGGING_CONFIG)
+
+logger = logging.getLogger(__name__)
 
 
 class ContentMSA:
@@ -25,7 +31,9 @@ class ContentMSA:
                 message.key.decode('utf-8')
             except Exception as e:
                 # Write some log record
-                message_value = {'detail': 'Data consuming error'}
+                error_message = 'Data consuming error'
+                logging.error(f'{e}: {error_message}')
+                message_value = {'detail': error_message}
 
             # Consumer commit
             self.consumer.commit()

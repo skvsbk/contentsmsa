@@ -4,6 +4,12 @@ from model.models import ContentBD
 from model.database import SessionLocal
 from service.serializers import UserPostsSerializer, PostsWOUseridSerializer, PostsSerializer, UserPostsListSerializer
 from service import result_submission_publisher
+from config import Config
+import logging
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel('INFO')
 
 
 class DefineHandler:
@@ -13,12 +19,8 @@ class DefineHandler:
         self.request = request
         self.key = key
 
-    def _check_request(self):
-        request_list = ['get_posts_list', 'get_authors_id_posts_list', 'get_posts_id', 'get_posts_with_authors_list']
-        return self.request["name"] in request_list
-
     def execute_handler(self):
-        if not self._check_request():
+        if self.request["name"] not in Config.AVAILABLE_REQUESTS:
             result = {'detail': 'No handler for request'}
             result_submission_publisher.change_state(key=self.key, value=result)
             return
@@ -77,7 +79,7 @@ class GetAllPosts(Handler):
 class CreatePost(Handler):
     """
     Create post with param
-    :param request: dict {"user_id": 1, "title": "post title", "body': "post body"}
+    :param request: dict {"user_id": 1, "title": "post title", "body": "post body"}
     :return: dict of received input values, but padded with the id key
     """
 
@@ -90,8 +92,11 @@ class CreatePost(Handler):
                 session.add(query)
                 session.commit()
                 session.refresh(query)
+                logger.info(f"Post created for user_id={request['user_id']}")
             return query.to_dict()
-        except:
+        except Exception as e:
+            error_message = f"Post was not created for user_id={request['user_id']}"
+            logger.warning(f"{e}: {error_message}")
             return {'detail': 'Post was not created'}
 
 
@@ -144,8 +149,11 @@ class UpdatePost(Handler):
                 query.body = request['body']
                 session.commit()
                 session.refresh(query)
+                logger.info(f"Post with post_id={request['id']} was updated for user_id={request['user_id']}")
             return query.to_dict()
-        except:
+        except Exception as e:
+            error_message = f"Post with post_id={request['id']} was not updated for user_id={request['user_id']}"
+            logger.warning(f"{e}: {error_message}")
             return {'detail': 'Can not update post'}
 
 
@@ -159,11 +167,14 @@ class DeletePost(Handler):
     def execute(self, request):
         try:
             with SessionLocal() as session:
-                query = session.query(ContentBD).filter(ContentBD.id == request["post_id"]).one()
+                query = session.query(ContentBD).filter(ContentBD.id == request['post_id']).one()
                 session.delete(query)
                 session.commit()
+                logger.info(f"Post with post_id={request['post_id']} has been deleted")
             return {'detail': 'Post has been deleted'}
-        except:
+        except Exception as e:
+            error_message = f"Post with post_id={request['id']} was not found"
+            logger.warning(f"{e}: {error_message}")
             return {'detail': 'Post is not found'}
 
 
