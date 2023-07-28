@@ -5,6 +5,11 @@ from model.database import SessionLocal
 from service.serializers import UserPostsSerializer, PostsWOUseridSerializer, PostsSerializer, UserPostsListSerializer
 from service import result_submission_publisher
 from config import Config
+import logging
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel('INFO')
 
 
 class DefineHandler:
@@ -87,8 +92,11 @@ class CreatePost(Handler):
                 session.add(query)
                 session.commit()
                 session.refresh(query)
+                logger.info(f"Post created for user_id={request['user_id']}")
             return query.to_dict()
-        except:
+        except Exception as e:
+            error_message = f"Post was not created for user_id={request['user_id']}"
+            logger.warning(f"{e}: {error_message}")
             return {'detail': 'Post was not created'}
 
 
@@ -141,8 +149,11 @@ class UpdatePost(Handler):
                 query.body = request['body']
                 session.commit()
                 session.refresh(query)
+                logger.info(f"Post with post_id={request['id']} was updated for user_id={request['user_id']}")
             return query.to_dict()
-        except:
+        except Exception as e:
+            error_message = f"Post with post_id={request['id']} was not updated for user_id={request['user_id']}"
+            logger.warning(f"{e}: {error_message}")
             return {'detail': 'Can not update post'}
 
 
@@ -156,11 +167,14 @@ class DeletePost(Handler):
     def execute(self, request):
         try:
             with SessionLocal() as session:
-                query = session.query(ContentBD).filter(ContentBD.id == request["post_id"]).one()
+                query = session.query(ContentBD).filter(ContentBD.id == request['post_id']).one()
                 session.delete(query)
                 session.commit()
+                logger.info(f"Post with post_id={request['post_id']} has been deleted")
             return {'detail': 'Post has been deleted'}
-        except:
+        except Exception as e:
+            error_message = f"Post with post_id={request['id']} was not found"
+            logger.warning(f"{e}: {error_message}")
             return {'detail': 'Post is not found'}
 
 
